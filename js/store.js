@@ -1,12 +1,12 @@
 /*
  * store.js ― GroupSplitter の共通部品（定数・文言・端末への保存・URLの解析・画面を作る小道具）
- * 基づく仕様書：GroupSplitter 仕様書 v0.5
+ * 基づく仕様書：GroupSplitter 仕様書 v0.6
  * 困ったとき：画面の［設定］タブの文言は TEXT にまとめてある。
  */
 'use strict';
 
-const APP_VERSION = '0.5';
-const CACHE_VERSION = 'groupsplitter-cache-v0.5';
+const APP_VERSION = '0.6';
+const CACHE_VERSION = 'groupsplitter-cache-v0.6';
 const STORAGE_PREFIX = 'gsp_';
 const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
 const MAX_TIE = 9;
