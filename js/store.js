@@ -1,12 +1,12 @@
 /*
  * store.js ― GroupSplitter の共通部品（定数・文言・端末への保存・URLの解析・画面を作る小道具）
- * 基づく仕様書：GroupSplitter 仕様書 v0.7
+ * 基づく仕様書：GroupSplitter 仕様書 v1.1
  * 困ったとき：画面の［設定］タブの文言は TEXT にまとめてある。
  */
 'use strict';
 
-const APP_VERSION = '0.7';
-const CACHE_VERSION = 'groupsplitter-cache-v0.7';
+const APP_VERSION = '1.1';
+const CACHE_VERSION = 'groupsplitter-cache-v1.1';
 const STORAGE_PREFIX = 'gsp_';
 const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
 const MAX_TIE = 9;
@@ -23,10 +23,10 @@ const DEFAULT_START_ROW = '7';          // メンバーの先頭の行の初期�
 
 const TEXT = {
   NEED_SETTINGS: '名簿を読み込んでください（［設定］タブ）',
-  NEED_CHECK: 'リーダーと参加者にチェックを付けてください',
-  NEED_LEADER: '車4か車5にチェックしたリーダーが必要です',
+  NEED_CHECK: 'ドライバーと参加者にチェックを付けてください',
+  NEED_LEADER: '乗か軽にチェックしたドライバーが必要です',
   ERR_NOTHING_CHECKED: 'チェックされた人がいません',
-  ERR_NO_LEADER: '車4か車5にチェックしたリーダーがいません',
+  ERR_NO_LEADER: '乗か軽にチェックしたドライバーがいません',
   SHORT_SEATS: (n) => '席が足りません。' + n + '名は『席なし』になります',
   ASSIGN: '振り分ける',
   RESHUFFLE: '振り分け直す',
@@ -34,9 +34,9 @@ const TEXT = {
   CANCEL_SELECT: '選択をやめる',
   MOVE_HERE: '＋ここへ移す',
   MOVE_UNPLACED: '＋席なしへ移す',
-  LEADER_FIXED: 'リーダーは動かせません',
+  LEADER_FIXED: 'ドライバーは動かせません',
   UNPLACED: '席なし',
-  LEADER: 'リーダー',
+  LEADER: 'ドライバー',
   RIDERS: '同乗',
   FOURTH: '4人目あり',
   ORIGIN_GROUP: 'もとのグループ',

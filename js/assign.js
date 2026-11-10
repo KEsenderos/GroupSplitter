@@ -1,12 +1,12 @@
 /*
  * assign.js ― GroupSplitter の振り分けの計算（画面にもGASにも依存しない部品）
- * 基づく仕様書：GroupSplitter 仕様書 v0.7
+ * 基づく仕様書：GroupSplitter 仕様書 v1.1
  * 入力が同じ（人の一覧と seed が同じ）なら、結果も必ず同じになる。
  */
 var GS_ASSIGN = (function () {
   'use strict';
 
-  var BASE_MEMBERS = 3;               // 1台の基本の同乗人数（リーダーを除く）
+  var BASE_MEMBERS = 3;               // 1台の基本の同乗人数（ドライバーを除く）
   var MAX_MEMBERS = { L4: 3, L5: 4 }; // 1台に乗れる最大の同乗人数
   var TRIES = 60;                     // 乱数を変えて試す回数
   var TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
@@ -42,7 +42,7 @@ var GS_ASSIGN = (function () {
    * assign(people, seed)
    *   people: [{ id, name?, g, role: 'L4'|'L5'|'M', tie: 0〜9 }]（チェックされた人だけ。並びは表の順）
    *     g    ＝もとのグループの番号（1から）
-   *     role ＝ L4：車4のリーダー／L5：車5のリーダー／M：参加
+   *     role ＝ L4：軽のドライバー／L5：乗のドライバー／M：参加
    *     tie  ＝一緒に乗る番号（0＝なし）
    *   戻り値：{ ok:true, cars:[{ leader, type, members:[id…] }], unplaced:[id…], score }
    *           か { ok:false, code, message, detail }
@@ -55,7 +55,7 @@ var GS_ASSIGN = (function () {
 
     var leaders = P.filter(function (p) { return p.role !== 'M'; });
     var members = P.filter(function (p) { return p.role === 'M'; });
-    if (leaders.length === 0) return fail('NO_LEADER', '車4・車5にチェックした人がいません');
+    if (leaders.length === 0) return fail('NO_LEADER', '乗・軽にチェックした人がいません');
 
     var cars = leaders.map(function (p, k) {
       return { k: k, leader: p, type: p.role === 'L5' ? 5 : 4,
@@ -74,21 +74,21 @@ var GS_ASSIGN = (function () {
       if (p.tie > 0) (tieMem[p.tie] = tieMem[p.tie] || []).push(p);
     });
 
-    var blocks = [];              // リーダーのいない、2人以上の番号のまとまり
+    var blocks = [];              // ドライバーのいない、2人以上の番号のまとまり
     var singles = [];             // 1人ずつ置く人
     var tied = {};                // 番号つきで singles 以外になった人の id
     for (var t = 1; t <= 9; t++) {
       var L = tieCars[t] || [], M = tieMem[t] || [];
       if (L.length >= 2) {
         return fail('TIE_TWO_LEADERS',
-          TIE_MARKS[t] + 'のリーダーが' + L.length + '人います（' +
-          L.map(function (c) { return nameOf(c.leader); }).join('、') + '）。リーダーは別々の車に乗るため、同じ番号にできません',
+          TIE_MARKS[t] + 'のドライバーが' + L.length + '人います（' +
+          L.map(function (c) { return nameOf(c.leader); }).join('、') + '）。ドライバーは別々の車に乗るため、同じ番号にできません',
           { tie: t, leaders: L.map(function (c) { return c.leader.id; }) });
       }
       if (L.length === 1) {
         if (M.length > L[0].cap) {
           return fail('TIE_TOO_BIG',
-            TIE_MARKS[t] + 'の人は' + (M.length + 1) + '人（リーダー' + nameOf(L[0].leader) + 'を含む）ですが、その車は車' +
+            TIE_MARKS[t] + 'の人は' + (M.length + 1) + '人（ドライバー' + nameOf(L[0].leader) + 'を含む）ですが、その車は車' +
             L[0].type + 'で同乗は' + L[0].cap + '人までです',
             { tie: t, size: M.length, cap: L[0].cap });
         }
@@ -238,7 +238,7 @@ var GS_ASSIGN = (function () {
     if (u >= 0) return { kind: 'unplaced', pos: u };
     return null;
   }
-  // 2人の入れ替え。リーダーは動かせない
+  // 2人の入れ替え。ドライバーは動かせない
   function swapPeople(state, idA, idB) {
     var a = locate_(state, idA), b = locate_(state, idB);
     if (!a || !b) return { ok: false, code: 'NOT_FOUND' };

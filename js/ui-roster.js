@@ -1,6 +1,6 @@
 /*
  * ui-roster.js ― ［名簿］タブ（名簿の表示・チェック・［振り分ける］）
- * 基づく仕様書：GroupSplitter 仕様書 v0.7
+ * 基づく仕様書：GroupSplitter 仕様書 v1.1
  * 人が行う作業：参加する人にチェックを付けて［振り分ける］を押す。
  */
 'use strict';
@@ -47,21 +47,27 @@ function renderRosterRows() {
     const block = h('section', { class: 'group-block', 'data-group': String(g.index) });
     block.append(h('h2', { class: 'group-title' }, [groupBadge(g.index), ' ' + g.title + '（' + g.people.length + '名）']));
     block.append(h('div', { class: 'col-head' }, [
-      h('span', { class: 'row-no' }), h('span', { class: 'pname' }),
-      h('span', { class: 'ch' }, '車4'), h('span', { class: 'ch' }, '車5'), h('span', { class: 'ch' }, '参加'), h('span', { class: 'ch tie' }, '番号')
+      h('span', { class: 'row-no' }),
+      h('span', { class: 'ch' }, '乗'), h('span', { class: 'ch' }, '軽'),
+      h('span', { class: 'pname' }),
+      h('span', { class: 'ch' }, '参加'), h('span', { class: 'ch tie' }, '番号')
     ]));
     g.people.forEach(function (p) {
       const row = h('div', { class: 'person-row', 'data-key': p.key });
       row.append(h('span', { class: 'row-no' }, p.label === null || p.label === undefined ? '' : String(p.label)));
-      row.append(h('span', { class: 'pname' }, p.name));
-      [['L4', 'chk-l4', '車4'], ['L5', 'chk-l5', '車5'], ['M', 'chk-m', '参加']].forEach(function (d) {
-        const input = h('input', { type: 'checkbox', class: d[1], 'aria-label': p.name + ' ' + d[2] });
-        input.addEventListener('change', function () { onRoleChange(p.key, input.checked ? d[0] : ''); });
+      /* 並び：行番号｜乗｜軽｜名前｜参加｜番号。乗・軽を付けると参加も付く／どれかを外すと両方外れる／参加だけなら乗・軽は付けない（9-4） */
+      function addCheck(cls, label, valueFn) {
+        const input = h('input', { type: 'checkbox', class: cls, 'aria-label': p.name + ' ' + label });
+        input.addEventListener('change', function () { onRoleChange(p.key, valueFn(input.checked)); });
         row.append(h('label', { class: 'chk' }, input));
-      });
+      }
+      addCheck('chk-l5', '乗', function (on) { return on ? 'L5' : ''; });
+      addCheck('chk-l4', '軽', function (on) { return on ? 'L4' : ''; });
+      row.append(h('span', { class: 'pname' }, p.name));
+      addCheck('chk-m', '参加', function (on) { return on ? 'M' : ''; });
       const sel = h('select', { class: 'tie-select', 'aria-label': p.name + ' 一緒に乗る番号' });
       for (let t = 0; t <= MAX_TIE; t++) sel.append(h('option', { value: String(t) }, t === 0 ? '－' : TIE_MARKS[t]));
-      sel.addEventListener('change', function () { onTieChange(p.key, Number(sel.value)); });
+      sel.addEventListener('change', function () { paintTie_(sel); onTieChange(p.key, Number(sel.value)); });
       row.append(sel);
       block.append(row);
       App.rowEls[p.key] = row;
@@ -79,12 +85,19 @@ function updateRowState(key) {
   const role = c ? c.r : '';
   row.querySelector('.chk-l4').checked = role === 'L4';
   row.querySelector('.chk-l5').checked = role === 'L5';
-  row.querySelector('.chk-m').checked = role === 'M';
+  row.querySelector('.chk-m').checked = role !== '';   /* 乗・軽のときも参加は付く */
   row.classList.toggle('is-leader', role === 'L4' || role === 'L5');
   row.classList.toggle('is-member', role === 'M');
   const sel = row.querySelector('.tie-select');
   sel.disabled = !role;
   sel.value = String(c ? c.t : 0);
+  paintTie_(sel);
+}
+
+/* 番号の色：select に tie-1〜tie-9 を付け外しする（0＝色なし） */
+function paintTie_(sel) {
+  for (let t = 1; t <= MAX_TIE; t++) sel.classList.remove('tie-' + t);
+  if (Number(sel.value) > 0) sel.classList.add('tie-' + Number(sel.value));
 }
 
 function onRoleChange(key, role) {
@@ -110,7 +123,7 @@ function renderActionBar() {
   else if (people.length === 0) { can = false; text = TEXT.NEED_CHECK; }
   else if (s.leaders === 0) { can = false; text = TEXT.NEED_LEADER; }
   else {
-    text = 'リーダー' + s.leaders + '名(車4×' + s.l4 + '・車5×' + s.l5 + ')・参加' + s.members + '名・席' +
+    text = 'ドライバー' + s.leaders + '名(乗×' + s.l5 + '・軽×' + s.l4 + ')・参加' + s.members + '名・席' +
       (s.seatsBase === s.seatsMax ? s.seatsBase : s.seatsBase + '〜' + s.seatsMax);
   }
   summary.textContent = text;

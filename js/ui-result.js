@@ -1,6 +1,6 @@
 /*
  * ui-result.js ― ［結果］タブ（車ごとの一覧・タップでの入れ替え・元に戻す・振り分け直し）
- * 基づく仕様書：GroupSplitter 仕様書 v0.7
+ * 基づく仕様書：GroupSplitter 仕様書 v1.1
  * 人が行う作業：入れ替えたい人を1回タップ→入れ替え先の人をタップ（空き席へは［＋ここへ移す］）。
  */
 'use strict';
@@ -25,7 +25,7 @@ function showResultNote(text) {
 
 function capOf_(car) { return car.type === 5 ? GS_ASSIGN.MAX_MEMBERS.L5 : GS_ASSIGN.MAX_MEMBERS.L4; }
 
-/* 車の名前（リーダーの名前＋「車」。同じ名前は2つ目以降に（2）を付ける） */
+/* 車の名前（ドライバーの名前＋「車」。同じ名前は2つ目以降に（2）を付ける） */
 function carNames_(res) {
   const count = {};
   return res.state.cars.map(function (c) {
@@ -69,7 +69,7 @@ function renderResultTab() {
     const b = h('button', { type: 'button', class: 'person-chip' + (isLeader ? ' leader' : '') + (id === App.sel ? ' selected' : ''), 'data-id': id });
     b.append(groupBadge(p.g));
     b.append(h('span', { class: 'cname' }, p.n));
-    if (p.t) b.append(h('span', { class: 'ctie' }, TIE_MARKS[p.t]));
+    if (p.t) b.append(h('span', { class: 'ctie tie-' + p.t }, TIE_MARKS[p.t]));
     if (broken[id]) b.append(h('span', { class: 'warn-mark', title: '一緒に乗る番号の人と別々です' }, '⚠'));
     b.addEventListener('click', function () { onPersonTap(id); });
     return b;
@@ -80,7 +80,7 @@ function renderResultTab() {
   res.state.cars.forEach(function (c, i) {
     const cap = capOf_(c);
     const card = h('section', { class: 'car-card', 'data-car': String(i) });
-    const head = h('h3', { class: 'car-head' }, [names[i] + '　［車' + c.type + '］　' + TEXT.RIDERS + ' ' + c.members.length + '/' + cap]);
+    const head = h('h3', { class: 'car-head' }, [names[i] + '　［' + (c.type === 5 ? '乗' : '軽') + '］　' + TEXT.RIDERS + ' ' + c.members.length + '/' + cap]);
     if (c.type === 5 && c.members.length > 3) head.append(h('span', { class: 'fourth' }, ' ' + TEXT.FOURTH));
     card.append(head);
     const lrow = h('div', { class: 'leader-row' }, [h('span', { class: 'leader-label' }, TEXT.LEADER), chip(c.leader, true)]);
@@ -88,7 +88,7 @@ function renderResultTab() {
     const mem = h('div', { class: 'members' });
     c.members.forEach(function (id) { mem.append(chip(id, false)); });
     card.append(mem);
-    // もとのグループの人数（リーダーも数える）
+    // もとのグループの人数（ドライバーも数える）
     const tally = {};
     [c.leader].concat(c.members).forEach(function (id) { const g = people[id].g; tally[g] = (tally[g] || 0) + 1; });
     const t = h('div', { class: 'tally' }, [TEXT.ORIGIN_GROUP + ' ']);

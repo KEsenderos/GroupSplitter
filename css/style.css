@@ -1,4 +1,4 @@
-/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v0.7（色は仕様書11-1の表） */
+/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v1.1（色は仕様書11-1の表） */
 :root {
   color-scheme: light;
   --bg: #F7F8FA; --card: #FFFFFF; --text: #1F2937; --muted: #4B5563;
@@ -8,6 +8,17 @@
   --g1: #1D4ED8; --g2: #0F766E; --g3: #B45309; --g4: #BE185D;
   --update: #7C3AED; --line: #D1D5DB; --disabled-bg: #9CA3AF; --disabled-text: #FFFFFF;
   --accent-line: #1D4ED8; --tab-h: 56px; --action-h: 150px;
+
+  /* 一緒に乗る番号 ❶〜❾ の色（明暗どちらでも同じ。背景＋文字色＝白か黒で、コントラスト4.5以上） */
+  --t1: #DC2626; --t1-fg: #FFFFFF;
+  --t2: #F97316; --t2-fg: #000000;
+  --t3: #FACC15; --t3-fg: #000000;
+  --t4: #16A34A; --t4-fg: #000000;
+  --t5: #06B6D4; --t5-fg: #000000;
+  --t6: #2563EB; --t6-fg: #FFFFFF;
+  --t7: #7C3AED; --t7-fg: #FFFFFF;
+  --t8: #EC4899; --t8-fg: #000000;
+  --t9: #92400E; --t9-fg: #FFFFFF;
 }
 /* ダーク（色の変数だけを差し替える。部品の並び・大きさ・文言・動きは変えない） */
 :root[data-theme="dark"] {
@@ -55,7 +66,7 @@ h2, h3 { font-size: 16px; margin: 0; }
 #roster-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; margin-top: 8px; }
 .group-block { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
 .group-title { padding: 4px 4px 8px; display: flex; align-items: center; gap: 4px; }
-.col-head, .person-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 44px 44px 44px 64px; align-items: center; gap: 2px; }
+.col-head, .person-row { display: grid; grid-template-columns: 26px 44px 44px minmax(0, 1fr) 44px 64px; align-items: center; gap: 2px; }
 .col-head { font-size: 12px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--line); }
 .person-row { min-height: 48px; border-radius: 8px; padding: 0 2px; }
 .person-row.is-leader { background: var(--leader-bg); }
@@ -98,7 +109,17 @@ h2, h3 { font-size: 16px; margin: 0; }
 .person-chip.leader { background: var(--leader-bg); }
 .person-chip.selected { background: var(--select-bg); border-color: var(--accent-line); border-width: 2px; }
 .cname { overflow-wrap: anywhere; }
-.ctie { font-size: 18px; }
+.ctie { font-size: 18px; line-height: 1; padding: 3px 6px; border-radius: 999px; border: 1px solid rgba(0,0,0,.35); }
+.tie-1 { background: var(--t1); color: var(--t1-fg); }
+.tie-2 { background: var(--t2); color: var(--t2-fg); }
+.tie-3 { background: var(--t3); color: var(--t3-fg); }
+.tie-4 { background: var(--t4); color: var(--t4-fg); }
+.tie-5 { background: var(--t5); color: var(--t5-fg); }
+.tie-6 { background: var(--t6); color: var(--t6-fg); }
+.tie-7 { background: var(--t7); color: var(--t7-fg); }
+.tie-8 { background: var(--t8); color: var(--t8-fg); }
+.tie-9 { background: var(--t9); color: var(--t9-fg); }
+.tie-select[class*="tie-"] { border-color: rgba(0,0,0,.35); font-weight: 700; }
 .warn-mark { color: var(--warn-text); font-weight: 700; }
 .tally { margin-top: 6px; font-size: 13px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
 .slot-btn { margin-top: 8px; width: 100%; min-height: 44px; border: 2px dashed var(--accent-line); border-radius: 10px; background: transparent; color: var(--accent-text); font-weight: 700; cursor: pointer; }

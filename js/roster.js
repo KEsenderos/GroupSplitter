@@ -1,6 +1,6 @@
 /*
  * roster.js ― 名簿の読み込み（GASとの通信）・名簿の写し・チェックの管理
- * 基づく仕様書：GroupSplitter 仕様書 v0.7
+ * 基づく仕様書：GroupSplitter 仕様書 v1.1
  * 人が行う作業：なし（［設定］タブで名簿のURL・GASのURL・合言葉を入れると、自動で読み込まれる）。
  * 困ったとき：画面の「更新中…」「失敗：…」の理由を見る。仕様書の9-6に理由の一覧がある。
  */
@@ -124,7 +124,7 @@ function mergeChecksWithRoster() {
   if (changed) saveChecks();
 }
 
-/* チェックの変更。role は 'L4' 'L5' 'M' か ''。3つは同時に1つだけ。外れたら番号は0に戻す */
+/* チェックの変更。role は 'L4'（軽）'L5'（乗）'M'（参加だけ）か ''（なし）。役割は同時に1つだけ。画面では乗・軽のとき参加も付いて見える（9-4）。''になったら番号は0に戻す */
 function setRole(key, role) {
   if (!role) { delete App.checks[key]; } else {
     const old = App.checks[key];
