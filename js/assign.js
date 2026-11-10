@@ -1,6 +1,6 @@
 /*
  * assign.js ― GroupSplitter の振り分けの計算（画面にもGASにも依存しない部品）
- * 基づく仕様書：GroupSplitter 仕様書 v1.1
+ * 基づく仕様書：GroupSplitter 仕様書 v1.3
  * 入力が同じ（人の一覧と seed が同じ）なら、結果も必ず同じになる。
  */
 var GS_ASSIGN = (function () {
@@ -10,6 +10,7 @@ var GS_ASSIGN = (function () {
   var MAX_MEMBERS = { L4: 3, L5: 4 }; // 1台に乗れる最大の同乗人数
   var TRIES = 60;                     // 乱数を変えて試す回数
   var TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
+  var WALK_TIE = 10;                  // 「歩き」を表す番号。この人は車にも席なしにも入れず、歩きの欄に出す
 
   // 種つきの乱数（mulberry32）。0以上1未満の数を返す関数を作る
   function mulberry32(seed) {
@@ -40,18 +41,23 @@ var GS_ASSIGN = (function () {
 
   /*
    * assign(people, seed)
-   *   people: [{ id, name?, g, role: 'L4'|'L5'|'M', tie: 0〜9 }]（チェックされた人だけ。並びは表の順）
+   *   people: [{ id, name?, g, role: 'L4'|'L5'|'M', tie: 0〜9、または 10（＝歩き）}]（チェックされた人だけ。並びは表の順）
    *     g    ＝もとのグループの番号（1から）
    *     role ＝ L4：軽のドライバー／L5：乗のドライバー／M：参加
-   *     tie  ＝一緒に乗る番号（0＝なし）
-   *   戻り値：{ ok:true, cars:[{ leader, type, members:[id…] }], unplaced:[id…], score }
+   *     tie  ＝一緒に乗る番号（0＝なし、10＝歩き。歩きは参加の人だけ有効。ドライバーの歩きは無視する）
+   *   戻り値：{ ok:true, cars:[{ leader, type, members:[id…] }], unplaced:[id…], walkers:[id…], score }
    *           か { ok:false, code, message, detail }
    */
   function assign(people, seed) {
     var P = people.map(function (p, i) {
-      return { id: p.id, name: p.name, g: p.g, role: p.role, tie: p.tie | 0, i: i };
+      var tie = p.tie | 0;
+      if (tie === WALK_TIE && p.role !== 'M') tie = 0;   // ドライバーの「歩き」は無視する
+      return { id: p.id, name: p.name, g: p.g, role: p.role, tie: tie, i: i };
     });
     if (P.length === 0) return fail('NOTHING_CHECKED', 'チェックされた人がいません');
+    // 歩きの人は、車の計算に入れない（歩きの欄へ。入力の並び）
+    var walkers = P.filter(function (p) { return p.tie === WALK_TIE; }).map(function (p) { return p.id; });
+    P = P.filter(function (p) { return p.tie !== WALK_TIE; });
 
     var leaders = P.filter(function (p) { return p.role !== 'M'; });
     var members = P.filter(function (p) { return p.role === 'M'; });
@@ -125,6 +131,7 @@ var GS_ASSIGN = (function () {
                  members: c.mem.slice().sort(byIndex_).map(function (p) { return p.id; }) };
       }),
       unplaced: best.unplaced.slice().sort(byIndex_).map(function (p) { return p.id; }),
+      walkers: walkers,
       score: best.score
     };
 
@@ -226,7 +233,7 @@ var GS_ASSIGN = (function () {
   // state: { cars:[{leader, type, members:[id…]}], unplaced:[id…] }
   function cloneState(state) {
     return { cars: state.cars.map(function (c) { return { leader: c.leader, type: c.type, members: c.members.slice() }; }),
-             unplaced: state.unplaced.slice() };
+             unplaced: state.unplaced.slice(), walkers: (state.walkers || []).slice() };
   }
   function locate_(state, id) {
     for (var i = 0; i < state.cars.length; i++) {
@@ -236,12 +243,14 @@ var GS_ASSIGN = (function () {
     }
     var u = state.unplaced.indexOf(id);
     if (u >= 0) return { kind: 'unplaced', pos: u };
+    if ((state.walkers || []).indexOf(id) >= 0) return { kind: 'walk' };
     return null;
   }
   // 2人の入れ替え。ドライバーは動かせない
   function swapPeople(state, idA, idB) {
     var a = locate_(state, idA), b = locate_(state, idB);
     if (!a || !b) return { ok: false, code: 'NOT_FOUND' };
+    if (a.kind === 'walk' || b.kind === 'walk') return { ok: false, code: 'WALK_FIXED' };
     if (a.kind === 'leader' || b.kind === 'leader') return { ok: false, code: 'LEADER_FIXED' };
     if (idA === idB) return { ok: false, code: 'SAME' };
     var s = cloneState(state);
@@ -256,6 +265,7 @@ var GS_ASSIGN = (function () {
   function movePerson(state, id, to) {
     var a = locate_(state, id);
     if (!a) return { ok: false, code: 'NOT_FOUND' };
+    if (a.kind === 'walk') return { ok: false, code: 'WALK_FIXED' };
     if (a.kind === 'leader') return { ok: false, code: 'LEADER_FIXED' };
     var s = cloneState(state);
     if (to === 'unplaced') {
@@ -283,18 +293,18 @@ var GS_ASSIGN = (function () {
     var first = {}, broken = {};
     Object.keys(where).forEach(function (id) {
       var t = tieOf[id] | 0;
-      if (t > 0) { (first[t] = first[t] || {})[where[id]] = true; }
+      if (t > 0 && t < WALK_TIE) { (first[t] = first[t] || {})[where[id]] = true; }
     });
     var out = [];
     Object.keys(where).forEach(function (id) {
       var t = tieOf[id] | 0;
-      if (t > 0 && Object.keys(first[t]).length > 1) out.push(id);
+      if (t > 0 && t < WALK_TIE && Object.keys(first[t]).length > 1) out.push(id);
     });
     return out;
   }
 
   return {
-    TRIES: TRIES, BASE_MEMBERS: BASE_MEMBERS, MAX_MEMBERS: MAX_MEMBERS, TIE_MARKS: TIE_MARKS,
+    WALK_TIE: WALK_TIE, TRIES: TRIES, BASE_MEMBERS: BASE_MEMBERS, MAX_MEMBERS: MAX_MEMBERS, TIE_MARKS: TIE_MARKS,
     mulberry32: mulberry32, assign: assign,
     swapPeople: swapPeople, movePerson: movePerson, brokenTies: brokenTies
   };

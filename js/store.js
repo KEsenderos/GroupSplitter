@@ -1,15 +1,16 @@
 /*
  * store.js ― GroupSplitter の共通部品（定数・文言・端末への保存・URLの解析・画面を作る小道具）
- * 基づく仕様書：GroupSplitter 仕様書 v1.1
+ * 基づく仕様書：GroupSplitter 仕様書 v1.3
  * 困ったとき：画面の［設定］タブの文言は TEXT にまとめてある。
  */
 'use strict';
 
-const APP_VERSION = '1.1';
-const CACHE_VERSION = 'groupsplitter-cache-v1.1';
+const APP_VERSION = '1.3';
+const CACHE_VERSION = 'groupsplitter-cache-v1.3';
 const STORAGE_PREFIX = 'gsp_';
-const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
+const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾', '歩き'];   // 添字10＝歩き
 const MAX_TIE = 9;
+const WALK_TIE = 10;   // 「歩き」の番号（車に乗らない人。assign.js の WALK_TIE と同じ）
 const ROSTER_REFRESH_MIN_INTERVAL_MS = 300000;
 const GAS_TIMEOUT_MS = 30000;
 const UNDO_MAX = 30;
@@ -35,6 +36,8 @@ const TEXT = {
   MOVE_HERE: '＋ここへ移す',
   MOVE_UNPLACED: '＋席なしへ移す',
   LEADER_FIXED: 'ドライバーは動かせません',
+  WALK_FIXED: '歩きの人は結果では動かせません（名簿の［番号］を変えて、振り分け直してください）',
+  WALK: '歩き',
   UNPLACED: '席なし',
   LEADER: 'ドライバー',
   RIDERS: '同乗',
@@ -43,7 +46,9 @@ const TEXT = {
   LOADING: '更新中…',
   READ_AT: (t) => t + 'に読み込み',
   SKIPPED: (cells) => '文字ではないセルを飛ばしました：' + cells,
-  CLEARED: 'チェックをすべて外しました',
+  CLEARED: 'リセットしました',
+  FOLD_SHOW: '表示',
+  FOLD_HIDE: '非表示',
   UPDATE_AVAILABLE: '新しい版があります。押すと更新します',
   NO_RESULT: 'まだ振り分けていません。［名簿］タブでチェックを付けて［振り分ける］を押してください',
   SELECT_HINT: (n) => n + 'さんを選びました。入れ替える人をタップ、または車の［＋ここへ移す］をタップ',

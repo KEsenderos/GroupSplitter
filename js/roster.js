@@ -1,6 +1,6 @@
 /*
  * roster.js ― 名簿の読み込み（GASとの通信）・名簿の写し・チェックの管理
- * 基づく仕様書：GroupSplitter 仕様書 v1.1
+ * 基づく仕様書：GroupSplitter 仕様書 v1.3
  * 人が行う作業：なし（［設定］タブで名簿のURL・GASのURL・合言葉を入れると、自動で読み込まれる）。
  * 困ったとき：画面の「更新中…」「失敗：…」の理由を見る。仕様書の9-6に理由の一覧がある。
  */
@@ -128,14 +128,17 @@ function mergeChecksWithRoster() {
 function setRole(key, role) {
   if (!role) { delete App.checks[key]; } else {
     const old = App.checks[key];
-    App.checks[key] = { r: role, t: old ? old.t : 0 };
+    let t = old ? old.t : 0;
+    if (t === WALK_TIE && role !== 'M') t = 0;   // ドライバーは歩きにできない
+    App.checks[key] = { r: role, t: t };
   }
   saveChecks();
 }
 function setTie(key, t) {
   const c = App.checks[key];
   if (!c) return;
-  c.t = Math.max(0, Math.min(MAX_TIE, t | 0));
+  c.t = Math.max(0, Math.min(WALK_TIE, t | 0));
+  if (c.t === WALK_TIE && c.r !== 'M') c.t = 0;
   saveChecks();
 }
 
@@ -153,9 +156,12 @@ function collectChecked() {
 }
 
 function summarize(people) {
-  let l4 = 0, l5 = 0, members = 0;
-  people.forEach(function (p) { if (p.role === 'L4') l4++; else if (p.role === 'L5') l5++; else members++; });
+  let l4 = 0, l5 = 0, members = 0, walkers = 0;
+  people.forEach(function (p) {
+    if (p.role === 'L4') l4++; else if (p.role === 'L5') l5++;
+    else if (p.tie === WALK_TIE) walkers++; else members++;
+  });
   const leaders = l4 + l5;
-  return { leaders: leaders, l4: l4, l5: l5, members: members,
+  return { leaders: leaders, l4: l4, l5: l5, members: members, walkers: walkers,
            seatsBase: 3 * leaders, seatsMax: 3 * l4 + 4 * l5 };
 }

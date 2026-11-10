@@ -1,4 +1,4 @@
-/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v1.1（色は仕様書11-1の表） */
+/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v1.3（色は仕様書11-1の表） */
 :root {
   color-scheme: light;
   --bg: #F7F8FA; --card: #FFFFFF; --text: #1F2937; --muted: #4B5563;
@@ -19,6 +19,7 @@
   --t7: #7C3AED; --t7-fg: #FFFFFF;
   --t8: #EC4899; --t8-fg: #000000;
   --t9: #92400E; --t9-fg: #FFFFFF;
+  --t10: #475569; --t10-fg: #FFFFFF;   /* 歩き */
 }
 /* ダーク（色の変数だけを差し替える。部品の並び・大きさ・文言・動きは変えない） */
 :root[data-theme="dark"] {
@@ -66,6 +67,9 @@ h2, h3 { font-size: 16px; margin: 0; }
 #roster-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; margin-top: 8px; }
 .group-block { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
 .group-title { padding: 4px 4px 8px; display: flex; align-items: center; gap: 4px; }
+.group-block.is-folded .group-title { padding-bottom: 4px; }
+.fold-count { font-size: 14px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+.fold-btn { margin-left: auto; flex: none; }
 .col-head, .person-row { display: grid; grid-template-columns: 26px 44px 44px minmax(0, 1fr) 44px 64px; align-items: center; gap: 2px; }
 .col-head { font-size: 12px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--line); }
 .person-row { min-height: 48px; border-radius: 8px; padding: 0 2px; }
@@ -99,7 +103,7 @@ h2, h3 { font-size: 16px; margin: 0; }
 .result-note { margin: 8px 0; padding: 8px 10px; background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; }
 .car-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 8px 0; align-items: start; }
 .car-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
-.car-card.unplaced { margin-top: 12px; }
+.car-card.unplaced, .car-card.walk { margin-top: 12px; }
 .car-head { display: flex; flex-wrap: wrap; align-items: baseline; margin-bottom: 6px; }
 .fourth { color: var(--warn-text); font-size: 13px; }
 .leader-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
@@ -119,6 +123,7 @@ h2, h3 { font-size: 16px; margin: 0; }
 .tie-7 { background: var(--t7); color: var(--t7-fg); }
 .tie-8 { background: var(--t8); color: var(--t8-fg); }
 .tie-9 { background: var(--t9); color: var(--t9-fg); }
+.tie-10 { background: var(--t10); color: var(--t10-fg); }
 .tie-select[class*="tie-"] { border-color: rgba(0,0,0,.35); font-weight: 700; }
 .warn-mark { color: var(--warn-text); font-weight: 700; }
 .tally { margin-top: 6px; font-size: 13px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }

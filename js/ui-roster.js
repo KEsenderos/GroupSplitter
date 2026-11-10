@@ -1,11 +1,48 @@
 /*
  * ui-roster.js ― ［名簿］タブ（名簿の表示・チェック・［振り分ける］）
- * 基づく仕様書：GroupSplitter 仕様書 v1.1
+ * 基づく仕様書：GroupSplitter 仕様書 v1.3
  * 人が行う作業：参加する人にチェックを付けて［振り分ける］を押す。
  */
 'use strict';
 
 let clearNoteTimer = null;
+
+/* ---- グループのパネルの表示／非表示（v1.3）----
+ * 開いているグループの番号を App.openGroups（{ 番号: true }）に持ち、端末に保存する（gsp_openGroups）。
+ * 何も保存していないときは、全部閉じている（初期値）。 */
+function loadOpenGroups_() {
+  const arr = lsGetJson('openGroups', []);
+  const o = {};
+  if (Array.isArray(arr)) arr.forEach(function (k) { o[String(k)] = true; });
+  return o;
+}
+function saveOpenGroups_() { lsSetJson('openGroups', Object.keys(App.openGroups)); }
+function applyFold_(idx) {
+  const el = App.groupEls && App.groupEls[idx];
+  if (!el) return;
+  const open = !!App.openGroups[idx];
+  el.body.hidden = !open;
+  el.btn.textContent = open ? TEXT.FOLD_HIDE : TEXT.FOLD_SHOW;
+  el.btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  el.block.classList.toggle('is-folded', !open);
+}
+function onFoldToggle(idx) {
+  if (App.openGroups[idx]) delete App.openGroups[idx]; else App.openGroups[idx] = true;
+  saveOpenGroups_();
+  applyFold_(idx);
+  renderActionBar();   // リセットボタンの押せる・押せないを更新
+}
+/* 閉じているグループの見出しにも、チェックした人数を出す */
+function updateGroupHeads_() {
+  if (!App.roster || !App.groupEls) return;
+  App.roster.groups.forEach(function (g) {
+    const el = App.groupEls[String(g.index)];
+    if (!el) return;
+    let n = 0;
+    g.people.forEach(function (p) { if (App.checks[p.key]) n++; });
+    el.count.textContent = n ? '　選択' + n + '名' : '';
+  });
+}
 
 /* 名簿の状態の表示（「14:50に読み込み」「失敗：…」） */
 function renderRosterStatus() {
@@ -38,6 +75,8 @@ function renderRosterRows() {
   }
   App.rosterSig = sig;
   App.rowEls = {};
+  App.groupEls = {};
+  if (!App.openGroups) App.openGroups = loadOpenGroups_();
   box.textContent = '';
   if (!r) {
     box.append(h('p', { class: 'empty' }, TEXT.NEED_SETTINGS));
@@ -45,8 +84,15 @@ function renderRosterRows() {
   }
   r.groups.forEach(function (g) {
     const block = h('section', { class: 'group-block', 'data-group': String(g.index) });
-    block.append(h('h2', { class: 'group-title' }, [groupBadge(g.index), ' ' + g.title + '（' + g.people.length + '名）']));
-    block.append(h('div', { class: 'col-head' }, [
+    const gi = String(g.index);
+    const countEl = h('span', { class: 'fold-count' });
+    const foldBtn = h('button', { type: 'button', class: 'btn small fold-btn', 'aria-label': g.title + ' の表示／非表示' });
+    foldBtn.addEventListener('click', function () { onFoldToggle(gi); });
+    block.append(h('h2', { class: 'group-title' }, [groupBadge(g.index), ' ' + g.title + '（' + g.people.length + '名）', countEl, foldBtn]));
+    const body = h('div', { class: 'group-body' });
+    block.append(body);
+    App.groupEls[gi] = { block: block, body: body, btn: foldBtn, count: countEl };
+    body.append(h('div', { class: 'col-head' }, [
       h('span', { class: 'row-no' }),
       h('span', { class: 'ch' }, '乗'), h('span', { class: 'ch' }, '軽'),
       h('span', { class: 'pname' }),
@@ -66,13 +112,16 @@ function renderRosterRows() {
       row.append(h('span', { class: 'pname' }, p.name));
       addCheck('chk-m', '参加', function (on) { return on ? 'M' : ''; });
       const sel = h('select', { class: 'tie-select', 'aria-label': p.name + ' 一緒に乗る番号' });
-      for (let t = 0; t <= MAX_TIE; t++) sel.append(h('option', { value: String(t) }, t === 0 ? '－' : TIE_MARKS[t]));
+      /* 並び：－｜歩き｜❶〜❾ */
+      sel.append(h('option', { value: '0' }, '－'), h('option', { value: String(WALK_TIE), class: 'opt-walk' }, TIE_MARKS[WALK_TIE]));
+      for (let t = 1; t <= MAX_TIE; t++) sel.append(h('option', { value: String(t) }, TIE_MARKS[t]));
       sel.addEventListener('change', function () { paintTie_(sel); onTieChange(p.key, Number(sel.value)); });
       row.append(sel);
-      block.append(row);
+      body.append(row);
       App.rowEls[p.key] = row;
     });
     box.append(block);
+    applyFold_(gi);
   });
   Object.keys(App.rowEls).forEach(updateRowState);
 }
@@ -91,12 +140,13 @@ function updateRowState(key) {
   const sel = row.querySelector('.tie-select');
   sel.disabled = !role;
   sel.value = String(c ? c.t : 0);
+  sel.querySelector('.opt-walk').disabled = (role === 'L4' || role === 'L5');   /* ドライバーは歩きを選べない */
   paintTie_(sel);
 }
 
 /* 番号の色：select に tie-1〜tie-9 を付け外しする（0＝色なし） */
 function paintTie_(sel) {
-  for (let t = 1; t <= MAX_TIE; t++) sel.classList.remove('tie-' + t);
+  for (let t = 1; t <= WALK_TIE; t++) sel.classList.remove('tie-' + t);
   if (Number(sel.value) > 0) sel.classList.add('tie-' + Number(sel.value));
 }
 
@@ -124,12 +174,13 @@ function renderActionBar() {
   else if (s.leaders === 0) { can = false; text = TEXT.NEED_LEADER; }
   else {
     text = 'ドライバー' + s.leaders + '名(乗×' + s.l5 + '・軽×' + s.l4 + ')・参加' + s.members + '名・席' +
-      (s.seatsBase === s.seatsMax ? s.seatsBase : s.seatsBase + '〜' + s.seatsMax);
+      (s.seatsBase === s.seatsMax ? s.seatsBase : s.seatsBase + '〜' + s.seatsMax) + (s.walkers ? '・歩き' + s.walkers + '名' : '');
   }
   summary.textContent = text;
   $('action-warn').textContent = (can && s.members > s.seatsMax) ? TEXT.SHORT_SEATS(s.members - s.seatsMax) : '';
   btn.disabled = !can;
-  $('clear-checks-btn').disabled = Object.keys(App.checks).length === 0;
+  updateGroupHeads_();
+  $('clear-checks-btn').disabled = Object.keys(App.checks).length === 0 && Object.keys(App.openGroups || {}).length === 0;
   $('action-error').textContent = '';
 }
 
@@ -145,19 +196,24 @@ function onAssignClick() {
   const pmap = {};
   people.forEach(function (p) { pmap[p.id] = { n: p.name, g: p.g, gt: p.gt, t: p.tie, r: p.role }; });
   App.result = { v: 1, seed: seed, at: new Date().toISOString(), people: pmap,
-                 state: { cars: r.cars, unplaced: r.unplaced } };
+                 state: { cars: r.cars, unplaced: r.unplaced, walkers: r.walkers } };
   saveResult_();
   App.undo = [];
   App.sel = null;
   switchTab('result');
 }
 
-/* ［チェックをすべて外す］（確認画面は出さず、5秒間［元に戻す］を出す） */
+/* ［リセット］：チェックを全部外し、グループのパネルも全部閉じる（確認画面は出さず、5秒間［元に戻す］を出す） */
 function onClearChecks() {
-  if (!Object.keys(App.checks).length) return;
+  App.openGroups = App.openGroups || {};
+  if (!Object.keys(App.checks).length && !Object.keys(App.openGroups).length) return;
   lsSetJson('prevChecks', App.checks);
+  lsSetJson('prevOpenGroups', Object.keys(App.openGroups));
   App.checks = {};
   saveChecks();
+  App.openGroups = {};
+  saveOpenGroups_();
+  Object.keys(App.groupEls || {}).forEach(applyFold_);
   Object.keys(App.rowEls).forEach(updateRowState);
   renderActionBar();
   const note = $('clear-note');
@@ -170,6 +226,11 @@ function onUndoClearChecks() {
   if (prev) {
     App.checks = prev;
     saveChecks();
+    const po = lsGetJson('prevOpenGroups', []);
+    App.openGroups = {};
+    if (Array.isArray(po)) po.forEach(function (k) { App.openGroups[String(k)] = true; });
+    saveOpenGroups_();
+    Object.keys(App.groupEls || {}).forEach(applyFold_);
     mergeChecksWithRoster();
     Object.keys(App.rowEls).forEach(updateRowState);
     renderActionBar();

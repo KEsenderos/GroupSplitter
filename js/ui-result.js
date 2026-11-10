@@ -1,6 +1,6 @@
 /*
  * ui-result.js ― ［結果］タブ（車ごとの一覧・タップでの入れ替え・元に戻す・振り分け直し）
- * 基づく仕様書：GroupSplitter 仕様書 v1.1
+ * 基づく仕様書：GroupSplitter 仕様書 v1.3
  * 人が行う作業：入れ替えたい人を1回タップ→入れ替え先の人をタップ（空き席へは［＋ここへ移す］）。
  */
 'use strict';
@@ -42,6 +42,7 @@ function renderResultTab() {
   $('result-toolbar').hidden = !has;
   $('car-list').hidden = !has;
   $('unplaced-card').hidden = !has;
+  $('walk-card').hidden = !has;
   $('select-hint').hidden = !has || !App.sel;
   if (!has) return;
 
@@ -69,7 +70,7 @@ function renderResultTab() {
     const b = h('button', { type: 'button', class: 'person-chip' + (isLeader ? ' leader' : '') + (id === App.sel ? ' selected' : ''), 'data-id': id });
     b.append(groupBadge(p.g));
     b.append(h('span', { class: 'cname' }, p.n));
-    if (p.t) b.append(h('span', { class: 'ctie tie-' + p.t }, TIE_MARKS[p.t]));
+    if (p.t && p.t !== WALK_TIE) b.append(h('span', { class: 'ctie tie-' + p.t }, TIE_MARKS[p.t]));
     if (broken[id]) b.append(h('span', { class: 'warn-mark', title: '一緒に乗る番号の人と別々です' }, '⚠'));
     b.addEventListener('click', function () { onPersonTap(id); });
     return b;
@@ -104,6 +105,15 @@ function renderResultTab() {
     list.append(card);
   });
 
+  /* 歩きのパネル（車と席なしの間。いつも表示する） */
+  const wk = $('walk-card');
+  const walkers = res.state.walkers || [];
+  wk.textContent = '';
+  wk.append(h('h3', { class: 'car-head' }, TEXT.WALK + '（' + walkers.length + '名）'));
+  const wm = h('div', { class: 'members' });
+  walkers.forEach(function (id) { wm.append(chip(id, false)); });
+  wk.append(wm);
+
   const un = $('unplaced-card');
   un.textContent = '';
   un.append(h('h3', { class: 'car-head' }, TEXT.UNPLACED + '（' + res.state.unplaced.length + '名）'));
@@ -122,6 +132,7 @@ function onPersonTap(id) {
   const res = App.result;
   if (!res) return;
   if (res.state.cars.some(function (c) { return c.leader === id; })) { showResultNote(TEXT.LEADER_FIXED); return; }
+  if ((res.state.walkers || []).indexOf(id) >= 0) { showResultNote(TEXT.WALK_FIXED); return; }
   if (!App.sel) { App.sel = id; }
   else if (App.sel === id) { App.sel = null; }
   else {
@@ -180,7 +191,7 @@ function onReshuffle() {
   pushUndo_();
   res.seed = seed;
   res.at = new Date().toISOString();
-  res.state = { cars: r.cars, unplaced: r.unplaced };
+  res.state = { cars: r.cars, unplaced: r.unplaced, walkers: r.walkers };
   saveResult_();
   showResultNote('');
   renderResultTab();

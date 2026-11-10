@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 基づく仕様書：GroupSplitter 仕様書 v1.1 -->
+<!-- 基づく仕様書：GroupSplitter 仕様書 v1.3 -->
 <html lang="ja">
 <head>
 <meta charset="utf-8">
@@ -32,7 +32,7 @@
       </div>
     </div>
     <p id="roster-notes" class="notes"></p>
-    <p id="clear-note" class="clear-note" hidden>チェックをすべて外しました <button id="clear-undo-btn" type="button" class="btn small">元に戻す</button></p>
+    <p id="clear-note" class="clear-note" hidden>リセットしました（チェックを外し、名簿のパネルを閉じました） <button id="clear-undo-btn" type="button" class="btn small">元に戻す</button></p>
     <div id="roster-groups"></div>
     <div class="spacer-roster"></div>
   </section>
@@ -50,6 +50,7 @@
     <div id="select-hint" class="select-hint" hidden><span></span> <button id="cancel-select-btn" type="button" class="btn small">選択をやめる</button></div>
     <p id="result-note" class="result-note" hidden></p>
     <div id="car-list" class="car-list" hidden></div>
+    <div id="walk-card" class="car-card walk" hidden></div>
     <div id="unplaced-card" class="car-card unplaced" hidden></div>
     <div class="spacer-other"></div>
   </section>
@@ -108,7 +109,7 @@
   <p id="action-warn" class="action-warn"></p>
   <p id="action-summary" class="action-summary"></p>
   <div class="action-buttons">
-    <button id="clear-checks-btn" type="button" class="btn">チェックをすべて外す</button>
+    <button id="clear-checks-btn" type="button" class="btn">リセット</button>
     <button id="assign-btn" type="button" class="btn primary big">振り分ける</button>
   </div>
 </div>
