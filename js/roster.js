@@ -1,6 +1,6 @@
 /*
  * roster.js ― 名簿の読み込み（GASとの通信）・名簿の写し・チェックの管理
- * 基づく仕様書：GroupSplitter 仕様書 v0.4
+ * 基づく仕様書：GroupSplitter 仕様書 v0.5
  * 人が行う作業：なし（［設定］タブで名簿のURL・GASのURL・合言葉を入れると、自動で読み込まれる）。
  * 困ったとき：画面の「更新中…」「失敗：…」の理由を見る。仕様書の9-6に理由の一覧がある。
  */
@@ -32,6 +32,7 @@ async function postToGas(url, body) {
 
 /* GASの返事が失敗のとき、画面に出す文にする */
 function gasErrorText(data) {
+  if (data && data.code === 'SHEET_NOT_FOUND' && data.message) return TEXT.GAS_ERR.SHEET_NOT_FOUND + '\nGoogleからの理由：' + data.message;
   if (data && data.code && TEXT.GAS_ERR[data.code]) return TEXT.GAS_ERR[data.code];
   return (data && data.message) ? data.message : 'GAS側でエラーが起きました';
 }
