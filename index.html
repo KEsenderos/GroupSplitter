@@ -1,15 +1,16 @@
 <!doctype html>
-<!-- 基づく仕様書：GroupSplitter 仕様書 v0.6 -->
+<!-- 基づく仕様書：GroupSplitter 仕様書 v0.7 -->
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1D4ED8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="GroupSplitter">
 <title>GroupSplitter</title>
+<script src="js/theme.js"></script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -67,20 +68,31 @@
       <label class="field">合言葉（GASで作ったもの）
         <input id="set-pass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
       </label>
-      <details class="adv">
-        <summary>読み込みがうまくいかないときだけ（行番号の指定）</summary>
-        <label class="field">見出しの行（グループ名が書かれている行の番号。空欄＝自動）
-          <input id="set-heading-row" type="text" inputmode="numeric" autocomplete="off">
-        </label>
-        <label class="field">メンバーの先頭の行（最初のメンバーがいる行の番号。空欄＝自動）
-          <input id="set-member-row" type="text" inputmode="numeric" autocomplete="off">
-        </label>
-      </details>
+      <h2 class="sub">名簿の読み方</h2>
+      <label class="field">読み込む列（例：F,I,L,O　列の数が変わったら、ここを直す。空欄＝自動で探す）
+        <input id="set-columns" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      </label>
+      <label class="field">メンバーの先頭の行（最初のメンバーがいる行の番号。初期値7。空欄＝自動で探す）
+        <input id="set-member-row" type="text" inputmode="numeric" autocomplete="off">
+      </label>
+      <label class="field">メンバーの最後の行（空欄＝表の最後まで）
+        <input id="set-end-row" type="text" inputmode="numeric" autocomplete="off">
+      </label>
+      <label class="field">見出しの行（グループ名が書かれている行の番号。空欄＝自動）
+        <input id="set-heading-row" type="text" inputmode="numeric" autocomplete="off">
+      </label>
       <div class="toolbar">
         <button id="set-save-btn" type="button" class="btn primary">保存する</button>
         <button id="test-btn" type="button" class="btn">読み込みテスト</button>
       </div>
       <p id="set-msg" class="msg"></p>
+      <h2 class="sub">見た目</h2>
+      <div id="theme-group" class="seg" role="group" aria-label="見た目">
+        <button type="button" class="theme-btn" data-theme-mode="auto">自動</button>
+        <button type="button" class="theme-btn" data-theme-mode="light">ノーマル</button>
+        <button type="button" class="theme-btn" data-theme-mode="dark">ダーク</button>
+      </div>
+      <p class="hint">「自動」は、この端末の外観の設定（ダークかどうか）に合わせます。選ぶとすぐ変わります。この端末だけの設定です。</p>
       <div class="toolbar">
         <button id="clear-cache-btn" type="button" class="btn danger">名簿の写しを消す</button>
       </div>

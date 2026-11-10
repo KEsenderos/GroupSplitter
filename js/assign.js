@@ -1,6 +1,6 @@
 /*
  * assign.js ― GroupSplitter の振り分けの計算（画面にもGASにも依存しない部品）
- * 基づく仕様書：GroupSplitter 仕様書 v0.6
+ * 基づく仕様書：GroupSplitter 仕様書 v0.7
  * 入力が同じ（人の一覧と seed が同じ）なら、結果も必ず同じになる。
  */
 var GS_ASSIGN = (function () {

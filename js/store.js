@@ -1,12 +1,12 @@
 /*
  * store.js ― GroupSplitter の共通部品（定数・文言・端末への保存・URLの解析・画面を作る小道具）
- * 基づく仕様書：GroupSplitter 仕様書 v0.6
+ * 基づく仕様書：GroupSplitter 仕様書 v0.7
  * 困ったとき：画面の［設定］タブの文言は TEXT にまとめてある。
  */
 'use strict';
 
-const APP_VERSION = '0.6';
-const CACHE_VERSION = 'groupsplitter-cache-v0.6';
+const APP_VERSION = '0.7';
+const CACHE_VERSION = 'groupsplitter-cache-v0.7';
 const STORAGE_PREFIX = 'gsp_';
 const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾'];
 const MAX_TIE = 9;
@@ -18,6 +18,8 @@ const MAX_PEOPLE = 300;
 const MAX_GROUPS = 12;
 const MIN_PASS_LENGTH = 24;
 const ROLE = { L4: 'L4', L5: 'L5', M: 'M' };
+const DEFAULT_COLUMNS = 'F,I,L,O';      // 読み込む列の初期値（設定で変えられる）
+const DEFAULT_START_ROW = '7';          // メンバーの先頭の行の初期値（設定で変えられる）
 
 const TEXT = {
   NEED_SETTINGS: '名簿を読み込んでください（［設定］タブ）',
@@ -101,19 +103,38 @@ function lsSetJson(k, v) { lsSet(k, JSON.stringify(v)); }
 
 /* ---- 設定 ---- */
 function loadSettings() {
+  // 列・先頭の行は、一度も保存していなければ初期値。空欄で保存した場合は「自動」（空のまま）
+  const cols = lsGet('columns');
+  const start = lsGet('memberStartRow');
   return {
     sheetId: lsGet('sheetId') || '',
     sheetGid: lsGet('sheetGid') || '',
     gasUrl: lsGet('gasUrl') || '',
     pass: lsGet('pass') || '',
     headingRow: lsGet('headingRow') || '',
-    memberStartRow: lsGet('memberStartRow') || ''
+    memberStartRow: start === null ? DEFAULT_START_ROW : start,
+    memberEndRow: lsGet('memberEndRow') || '',
+    columns: cols === null ? DEFAULT_COLUMNS : cols
   };
 }
 function saveSettings(o) {
-  ['sheetId', 'sheetGid', 'gasUrl', 'pass', 'headingRow', 'memberStartRow'].forEach(function (k) {
+  ['sheetId', 'sheetGid', 'gasUrl', 'pass', 'headingRow', 'memberEndRow'].forEach(function (k) {
     if (o[k] === '' || o[k] === null || o[k] === undefined) lsRemove(k); else lsSet(k, String(o[k]));
   });
+  lsSet('memberStartRow', String(o.memberStartRow || ''));
+  lsSet('columns', String(o.columns || ''));
+}
+
+/* 「F,I,L,O」のような入力を、列の文字の配列にする。戻り値 { ok, cols } か { ok:false, error } */
+function parseColumns(text) {
+  const parts = String(text || '').normalize('NFKC').toUpperCase().split(/[\s,、，・]+/).filter(function (s) { return s !== ''; });
+  const cols = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (!/^[A-Z]{1,2}$/.test(parts[i])) return { ok: false, error: '読み込む列は「F,I,L,O」のように、列の文字（A〜ZZ）をカンマで区切って入れてください' };
+    if (cols.indexOf(parts[i]) < 0) cols.push(parts[i]);
+  }
+  if (cols.length > MAX_GROUPS) return { ok: false, error: '読み込む列は' + MAX_GROUPS + '個までです' };
+  return { ok: true, cols: cols };
 }
 function isRowNumber_(s) { return s === '' || (/^\d{1,3}$/.test(s) && Number(s) >= 1 && Number(s) <= 200); }
 function validateSettings(o) {
@@ -127,6 +148,10 @@ function validateSettings(o) {
   }
   if (!isRowNumber_(o.headingRow || '')) errors.push('見出しの行は1〜200の数字か、空欄にしてください');
   if (!isRowNumber_(o.memberStartRow || '')) errors.push('メンバーの先頭の行は1〜200の数字か、空欄にしてください');
+  if (!/^\d{0,4}$/.test(o.memberEndRow || '') || (o.memberEndRow && (Number(o.memberEndRow) < 1 || Number(o.memberEndRow) > 1000))) errors.push('メンバーの最後の行は1〜1000の数字か、空欄にしてください');
+  else if (o.memberEndRow && o.memberStartRow && Number(o.memberEndRow) < Number(o.memberStartRow)) errors.push('メンバーの最後の行は、先頭の行と同じかそれより下にしてください');
+  const pc = parseColumns(o.columns || '');
+  if (!pc.ok) errors.push(pc.error);
   return { ok: errors.length === 0, errors: errors };
 }
 

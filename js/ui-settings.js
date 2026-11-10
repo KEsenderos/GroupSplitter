@@ -1,6 +1,6 @@
 /*
  * ui-settings.js ― ［設定］タブ（名簿のURL・GASのURL・合言葉・行番号の指定・読み込みテスト）
- * 基づく仕様書：GroupSplitter 仕様書 v0.6
+ * 基づく仕様書：GroupSplitter 仕様書 v0.7
  * 人が行う作業：初めてだけ、3つ（名簿のURL・GASのURL・合言葉）を入れて［保存する］。
  * 困ったとき：［読み込みテスト］の結果の文を見る。
  */
@@ -19,7 +19,9 @@ function readSettingsForm_() {
       gasUrl: $('set-gas-url').value.trim(),
       pass: $('set-pass').value.trim(),
       headingRow: $('set-heading-row').value.trim(),
-      memberStartRow: $('set-member-row').value.trim()
+      memberStartRow: $('set-member-row').value.trim(),
+      memberEndRow: $('set-end-row').value.trim(),
+      columns: $('set-columns').value.trim()
     },
     old: old
   };
@@ -40,7 +42,20 @@ function renderSettingsTab() {
   $('set-pass').value = s.pass;
   $('set-heading-row').value = s.headingRow;
   $('set-member-row').value = s.memberStartRow;
+  $('set-end-row').value = s.memberEndRow;
+  $('set-columns').value = s.columns;
+  document.querySelectorAll('.theme-btn').forEach(function (b) {
+    const on = b.getAttribute('data-theme-mode') === getThemeMode();
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   $('app-version').textContent = 'GroupSplitter v' + APP_VERSION;
+}
+
+/* 見た目（自動／ノーマル／ダーク）。選んだ瞬間に変わる（保存ボタンは要らない） */
+function onThemeButton(mode) {
+  setThemeMode(mode);
+  renderSettingsTab();
 }
 
 /* 入力から、検査に使う設定を作る（URL欄が空なら、保存済みの名簿IDを使う） */
@@ -75,7 +90,7 @@ async function onTestConnection() {
     if (!data.ok) throw new Error(gasErrorText(data));
     const total = data.groups.reduce(function (a, g) { return a + g.people.length; }, 0);
     let text = '読み込めました：' + data.groups.length + 'グループ・' + total + '名／' +
-      (data.headingRow ? '見出し' + data.headingRow + '行目・' : '') + 'メンバー' + data.memberStartRow + '行目から';
+      (data.headingRow ? '見出し' + data.headingRow + '行目・' : '') + 'メンバー' + data.memberStartRow + '行目から' + (x.v.memberEndRow ? x.v.memberEndRow + '行目まで' : '');
     if (data.skipped && data.skipped.length) text += '（' + data.skipped.map(function (s) { return s.cell; }).join('、') + 'を飛ばしました）';
     text += '\n' + data.groups.map(function (g) { return g.title + '（' + g.colLetter + '列）' + g.people.length + '名'; }).join('\n');
     setMsg_(text, 'ok');

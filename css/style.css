@@ -1,4 +1,4 @@
-/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v0.6（色は仕様書11-1の表） */
+/* GroupSplitter の見た目。基づく仕様書：GroupSplitter 仕様書 v0.7（色は仕様書11-1の表） */
 :root {
   color-scheme: light;
   --bg: #F7F8FA; --card: #FFFFFF; --text: #1F2937; --muted: #4B5563;
@@ -7,7 +7,16 @@
   --warn-text: #9A3412; --warn-bg: #FFF7ED; --danger: #B91C1C;
   --g1: #1D4ED8; --g2: #0F766E; --g3: #B45309; --g4: #BE185D;
   --update: #7C3AED; --line: #D1D5DB; --disabled-bg: #9CA3AF; --disabled-text: #FFFFFF;
-  --tab-h: 56px; --action-h: 150px;
+  --accent-line: #1D4ED8; --tab-h: 56px; --action-h: 150px;
+}
+/* ダーク（色の変数だけを差し替える。部品の並び・大きさ・文言・動きは変えない） */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111827; --card: #1F2937; --text: #F3F4F6; --muted: #9CA3AF;
+  --accent: #2563EB; --accent-text: #93C5FD; --accent-line: #93C5FD;
+  --leader-bg: #713F12; --leader-text: #FDE68A; --member-bg: #1E3A8A; --select-bg: #1E40AF;
+  --warn-text: #FDBA74; --warn-bg: #431407; --danger: #FCA5A5;
+  --line: #374151; --disabled-bg: #4B5563; --disabled-text: #D1D5DB;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -52,6 +61,7 @@ h2, h3 { font-size: 16px; margin: 0; }
 .person-row.is-leader { background: var(--leader-bg); }
 .person-row.is-member { background: var(--member-bg); }
 .row-no { font-size: 12px; color: var(--muted); text-align: right; padding-right: 2px; }
+.person-row.is-leader .row-no, .person-row.is-member .row-no { color: var(--text); }
 .pname { overflow-wrap: anywhere; padding: 4px 4px; }
 .chk { display: flex; align-items: center; justify-content: center; min-height: 44px; }
 .chk input { width: 26px; height: 26px; accent-color: var(--accent); }
@@ -86,20 +96,24 @@ h2, h3 { font-size: 16px; margin: 0; }
 .members { display: flex; flex-direction: column; gap: 4px; }
 .person-chip { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); text-align: left; cursor: pointer; }
 .person-chip.leader { background: var(--leader-bg); }
-.person-chip.selected { background: var(--select-bg); border-color: var(--accent); border-width: 2px; }
+.person-chip.selected { background: var(--select-bg); border-color: var(--accent-line); border-width: 2px; }
 .cname { overflow-wrap: anywhere; }
 .ctie { font-size: 18px; }
 .warn-mark { color: var(--warn-text); font-weight: 700; }
 .tally { margin-top: 6px; font-size: 13px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
-.slot-btn { margin-top: 8px; width: 100%; min-height: 44px; border: 2px dashed var(--accent); border-radius: 10px; background: transparent; color: var(--accent-text); font-weight: 700; cursor: pointer; }
+.slot-btn { margin-top: 8px; width: 100%; min-height: 44px; border: 2px dashed var(--accent-line); border-radius: 10px; background: transparent; color: var(--accent-text); font-weight: 700; cursor: pointer; }
 
 /* 設定 */
 .settings { max-width: 560px; margin: 0 auto; }
 .field { display: block; margin: 12px 0 0; font-size: 14px; color: var(--muted); }
 .field input { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); font-size: 16px; }
 .hint { font-size: 13px; color: var(--muted); margin: 4px 0; }
-.adv { margin-top: 12px; }
-.adv summary { min-height: 44px; display: flex; align-items: center; color: var(--accent-text); cursor: pointer; }
+.sub { font-size: 15px; margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.seg { display: flex; gap: 0; margin-top: 8px; }
+.seg .theme-btn { flex: 1; min-height: 44px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+.seg .theme-btn:first-child { border-radius: 10px 0 0 10px; }
+.seg .theme-btn:last-child { border-radius: 0 10px 10px 0; }
+.seg .theme-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 .msg { white-space: pre-wrap; font-size: 14px; margin: 8px 0; }
 .msg.error { color: var(--danger); font-weight: 700; }
 .msg.ok { color: var(--text); }

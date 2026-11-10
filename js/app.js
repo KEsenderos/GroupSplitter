@@ -1,6 +1,6 @@
 /*
  * app.js ― 起動・タブの切り替え・更新ボタン
- * 基づく仕様書：GroupSplitter 仕様書 v0.6
+ * 基づく仕様書：GroupSplitter 仕様書 v0.7
  * 困ったとき：画面が古いままなら、上に出る紫の更新ボタンを押す。出ないときは10分ほど待ってアプリを開き直す。
  */
 'use strict';
@@ -48,6 +48,9 @@ function initApp() {
   $('set-save-btn').addEventListener('click', onSaveSettings);
   $('test-btn').addEventListener('click', onTestConnection);
   $('clear-cache-btn').addEventListener('click', onClearRosterCache);
+  document.querySelectorAll('.theme-btn').forEach(function (b) {
+    b.addEventListener('click', function () { onThemeButton(b.getAttribute('data-theme-mode')); });
+  });
 
   let first = lsGet('lastTab');
   if (['roster', 'result', 'settings'].indexOf(first) < 0) first = null;

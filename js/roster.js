@@ -1,6 +1,6 @@
 /*
  * roster.js ― 名簿の読み込み（GASとの通信）・名簿の写し・チェックの管理
- * 基づく仕様書：GroupSplitter 仕様書 v0.6
+ * 基づく仕様書：GroupSplitter 仕様書 v0.7
  * 人が行う作業：なし（［設定］タブで名簿のURL・GASのURL・合言葉を入れると、自動で読み込まれる）。
  * 困ったとき：画面の「更新中…」「失敗：…」の理由を見る。仕様書の9-6に理由の一覧がある。
  */
@@ -43,7 +43,17 @@ function makeRosterRequest(s) {
   if (s.sheetGid) body.gid = s.sheetGid;
   if (s.headingRow) body.headingRow = Number(s.headingRow);
   if (s.memberStartRow) body.memberStartRow = Number(s.memberStartRow);
+  if (s.memberEndRow) body.memberEndRow = Number(s.memberEndRow);
+  const pc = parseColumns(s.columns);
+  if (pc.ok && pc.cols.length) body.columns = pc.cols;
   return body;
+}
+
+/* 読み込み条件（名簿・行・列）の目印。変わったら、名簿の写しは古いので読み直す */
+function requestSig(s) {
+  const b = makeRosterRequest(s);
+  delete b.pass;
+  return JSON.stringify(b);
 }
 
 /* 各人に鍵を付ける。鍵＝グループの見出し|名前|同じグループ内で同じ名前の何番目か（0から） */
@@ -73,7 +83,8 @@ async function fetchRoster(force) {
   if (rosterBusy) return { ok: false, skipped: true };
   if (!force) {
     const last = Date.parse(lsGet('rosterAt') || '');
-    if (!isNaN(last) && Date.now() - last < ROSTER_REFRESH_MIN_INTERVAL_MS) return { ok: false, skipped: true };
+    const sameReq = App.roster && App.roster.reqSig === requestSig(s);
+    if (sameReq && !isNaN(last) && Date.now() - last < ROSTER_REFRESH_MIN_INTERVAL_MS) return { ok: false, skipped: true };
   }
   rosterBusy = true;
   App.status = { text: TEXT.LOADING, kind: '' };
@@ -83,7 +94,7 @@ async function fetchRoster(force) {
     if (!data.ok) throw new Error(gasErrorText(data));
     data.groups = makeKeys(data.groups);
     const r = { v: 1, readAt: data.readAt, sheetName: data.sheetName, headingRow: data.headingRow,
-                memberStartRow: data.memberStartRow, groups: data.groups, skipped: data.skipped || [] };
+                memberStartRow: data.memberStartRow, groups: data.groups, skipped: data.skipped || [], reqSig: requestSig(s) };
     saveRosterCache(r);
     App.roster = r;
     mergeChecksWithRoster();
