@@ -1,6 +1,6 @@
 /*
  * ui-roster.js ― ［名簿］タブ（名簿の表示・チェック・［振り分ける］）
- * 基づく仕様書：GroupSplitter 仕様書 v1.3
+ * 基づく仕様書：GroupSplitter 仕様書 v1.4.1
  * 人が行う作業：参加する人にチェックを付けて［振り分ける］を押す。
  */
 'use strict';
@@ -52,8 +52,19 @@ function renderRosterStatus() {
 }
 
 /* ［名簿］タブ全体を描く */
+/* 名簿から消えた人のチェックを外した知らせ（v1.4・R21）。［閉じる］まで残す */
+function renderDroppedNote() {
+  const d = lsGetJson('droppedNote', null);
+  const el = $('dropped-note');
+  if (!d || !Array.isArray(d.names) || !d.names.length) { el.hidden = true; return; }
+  $('dropped-text').textContent = '名簿に無くなったため、チェックを外しました：' + d.names.join('、') + (d.more > 0 ? '　ほか' + d.more + '名' : '');
+  el.hidden = false;
+}
+function onDroppedClose() { lsRemove('droppedNote'); renderDroppedNote(); }
+
 function renderRosterTab() {
   renderRosterStatus();
+  renderDroppedNote();
   const notes = $('roster-notes');
   notes.textContent = '';
   if (App.roster && App.roster.skipped && App.roster.skipped.length) {
@@ -195,6 +206,7 @@ function onAssignClick() {
   }
   const pmap = {};
   people.forEach(function (p) { pmap[p.id] = { n: p.name, g: p.g, gt: p.gt, t: p.tie, r: p.role }; });
+  if (App.result) App.prevResult = JSON.stringify(App.result);   // 直前の結果を1つ残す（R20）
   App.result = { v: 1, seed: seed, at: new Date().toISOString(), people: pmap,
                  state: { cars: r.cars, unplaced: r.unplaced, walkers: r.walkers } };
   saveResult_();

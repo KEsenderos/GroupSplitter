@@ -1,12 +1,12 @@
 /*
  * store.js ― GroupSplitter の共通部品（定数・文言・端末への保存・URLの解析・画面を作る小道具）
- * 基づく仕様書：GroupSplitter 仕様書 v1.3
+ * 基づく仕様書：GroupSplitter 仕様書 v1.4.1
  * 困ったとき：画面の［設定］タブの文言は TEXT にまとめてある。
  */
 'use strict';
 
-const APP_VERSION = '1.3';
-const CACHE_VERSION = 'groupsplitter-cache-v1.3';
+const APP_VERSION = '1.4.1';
+const CACHE_VERSION = 'groupsplitter-cache-v1.4.1';
 const STORAGE_PREFIX = 'gsp_';
 const TIE_MARKS = ['', '❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾', '歩き'];   // 添字10＝歩き
 const MAX_TIE = 9;
@@ -59,6 +59,7 @@ const TEXT = {
     BAD_PASS: '合言葉が違います',
     NOT_SETUP: 'GAS側の準備（setup）が終わっていません',
     NOT_ALLOWED: 'このスプレッドシートは、GASの許可リストにありません',
+    NO_ALLOWLIST: 'GASの許可リストが未設定です。スクリプトプロパティ GSP_ALLOWED_SPREADSHEET_IDS に名簿のIDを入れてください（手順書B8）',
     SHEET_NOT_FOUND: 'スプレッドシートを開けません（URLの間違い、またはGASを動かすGoogleアカウントに共有されていません）',
     NO_LIST: '名簿の表で、番号つきのメンバー一覧（1・2・3…）が見つかりません。［設定］の「メンバーの先頭の行」を指定してください',
     NO_GROUP: 'メンバーの先頭の行から下に、名前の入った列が見つかりません。行番号の指定を確かめてください',
@@ -75,6 +76,7 @@ const App = {
   checks: {},          // { 鍵: { r, t } }
   result: null,        // 最後の振り分け結果（7-3）
   undo: [],            // 元に戻す履歴（結果のJSON文字）。メモリの中だけ
+  prevResult: null,    // ［振り分ける］の直前の結果（1つだけ。メモリの中だけ。v1.4・R20）
   sel: null,           // 結果の画面で選んでいる人の鍵
   status: { text: '', kind: '' },
   rowEls: {},          // 鍵 → 名簿の行の部品

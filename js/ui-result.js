@@ -1,6 +1,6 @@
 /*
  * ui-result.js ― ［結果］タブ（車ごとの一覧・タップでの入れ替え・元に戻す・振り分け直し）
- * 基づく仕様書：GroupSplitter 仕様書 v1.3
+ * 基づく仕様書：GroupSplitter 仕様書 v1.4.1
  * 人が行う作業：入れ替えたい人を1回タップ→入れ替え先の人をタップ（空き席へは［＋ここへ移す］）。
  */
 'use strict';
@@ -63,7 +63,7 @@ function renderResultTab() {
     $('select-hint').firstElementChild.textContent = TEXT.SELECT_HINT(people[App.sel].n);
   }
   $('select-hint').hidden = !App.sel;
-  $('undo-btn').disabled = App.undo.length === 0;
+  $('undo-btn').disabled = App.undo.length === 0 && !App.prevResult;
 
   function chip(id, isLeader) {
     const p = people[id];
@@ -168,8 +168,12 @@ function onCancelSelect() { App.sel = null; renderResultTab(); }
 
 /* ［元に戻す］ */
 function onUndo() {
-  if (!App.undo.length) return;
-  App.result = JSON.parse(App.undo.pop());
+  if (App.undo.length) {
+    App.result = JSON.parse(App.undo.pop());
+  } else if (App.prevResult) {   // 履歴が空なら、［振り分ける］の直前の結果に戻す（R20）
+    App.result = JSON.parse(App.prevResult);
+    App.prevResult = null;
+  } else { return; }
   App.sel = null;
   saveResult_();
   showResultNote('');

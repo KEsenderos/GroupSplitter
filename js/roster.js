@@ -1,6 +1,6 @@
 /*
  * roster.js ― 名簿の読み込み（GASとの通信）・名簿の写し・チェックの管理
- * 基づく仕様書：GroupSplitter 仕様書 v1.3
+ * 基づく仕様書：GroupSplitter 仕様書 v1.4.1
  * 人が行う作業：なし（［設定］タブで名簿のURL・GASのURL・合言葉を入れると、自動で読み込まれる）。
  * 困ったとき：画面の「更新中…」「失敗：…」の理由を見る。仕様書の9-6に理由の一覧がある。
  */
@@ -95,9 +95,12 @@ async function fetchRoster(force) {
     data.groups = makeKeys(data.groups);
     const r = { v: 1, readAt: data.readAt, sheetName: data.sheetName, headingRow: data.headingRow,
                 memberStartRow: data.memberStartRow, groups: data.groups, skipped: data.skipped || [], reqSig: requestSig(s) };
+    const oldNames = {};   // 読み直す前の名簿の、鍵→名前・グループ名（消えた人の知らせ用。R21）
+    if (App.roster) App.roster.groups.forEach(function (g) { g.people.forEach(function (p) { oldNames[p.key] = { name: p.name, title: g.title }; }); });
     saveRosterCache(r);
     App.roster = r;
-    mergeChecksWithRoster();
+    const dropped = mergeChecksWithRoster(oldNames);
+    if (dropped.length) saveDroppedNote_(dropped);
     App.status = { text: TEXT.READ_AT(hhmm(r.readAt)), kind: '' };
     renderRosterTab();
     return { ok: true };
@@ -114,14 +117,26 @@ async function fetchRoster(force) {
 function loadChecks() { App.checks = lsGetJson('checks', {}) || {}; }
 function saveChecks() { lsSetJson('checks', App.checks); }
 
-/* 名簿に無い鍵のチェックを捨てる */
-function mergeChecksWithRoster() {
+/* 名簿に無い鍵のチェックを捨て、捨てた人の一覧 [{key,name,title}] を返す（v1.4・R21）。oldNames は鍵→{name,title}（省略できる） */
+function mergeChecksWithRoster(oldNames) {
   if (!App.roster) return;
   const keys = {};
   App.roster.groups.forEach(function (g) { g.people.forEach(function (p) { keys[p.key] = true; }); });
-  let changed = false;
-  Object.keys(App.checks).forEach(function (k) { if (!keys[k]) { delete App.checks[k]; changed = true; } });
-  if (changed) saveChecks();
+  const dropped = [];
+  Object.keys(App.checks).forEach(function (k) {
+    if (keys[k]) return;
+    const o = oldNames && oldNames[k];
+    dropped.push({ key: k, name: o ? o.name : k.replace(/\|\d+$/, ''), title: o ? o.title : '' });
+    delete App.checks[k];
+  });
+  if (dropped.length) saveChecks();
+  return dropped;
+}
+
+/* 消えた人の知らせを覚える（最大10名。残りは more。閉じるまで残す） */
+function saveDroppedNote_(dropped) {
+  const names = dropped.slice(0, 10).map(function (d) { return d.title ? d.name + '（' + d.title + '）' : d.name; });
+  lsSetJson('droppedNote', { at: new Date().toISOString(), names: names, more: Math.max(0, dropped.length - 10) });
 }
 
 /* チェックの変更。role は 'L4'（軽）'L5'（乗）'M'（参加だけ）か ''（なし）。役割は同時に1つだけ。画面では乗・軽のとき参加も付いて見える（9-4）。''になったら番号は0に戻す */
